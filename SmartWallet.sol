@@ -24,13 +24,14 @@ contract SmartWallet is Ownable {
     event Withdrew(address indexed recipient, uint256);
     event Transfered(address indexed sender, address indexed recipient, uint256 amount);
     event VipSet(address indexed account, bool status);
+    event Approval(address indexed _msgSender , address indexed spender , uint256 ammount);
     // Exercice 2
     // Ajouter un event Approval qui sera emit des qu'un approval aura été autorisé
     // il faudra qu'on y retrouve comme information l'ower des fonds, le spender et la somme autorisée
     // à etre depensée.
 
     // constructor
-    constructor(address owner_, uint256 tax_) Ownable(owner_) {
+    constructor(address owner_, uint256 tax_) Ownable( owner_) {
         require(tax_ >= 0 && tax_ <= 100, "SmartWallet: Invalid percentage");
         _tax = tax_;
     }
@@ -66,9 +67,12 @@ contract SmartWallet is Ownable {
     // Implémenter cette fonction pour que le msg.sender autorise spender à
     // dépenser en son nom l'equivalent de amount
     // il faudra manipuler pour cela le double mapping _allowances
-    function approve(address spender, uint256 amount) public {
+    function approve(address spender, uint256 amount) public returns (bool){
+        _allowances[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
     }
-
+   
     function transfer(address recipient, uint256 amount) public {
         require(_balances[msg.sender] > 0, "SmartWallet: can not transfer 0 ether");
         require(_balances[msg.sender] >= amount, "SmartWallet: Not enough Ether to transfer");
@@ -83,6 +87,11 @@ contract SmartWallet is Ownable {
     // Il faudra emettre un event Transfered si le transfer est effectué avec succès
     function transferFrom(address from, address to, uint256 amount) public {
         // ecriture dans un registre comptable
+         uint256 senderBalance = _balances[sender];
+        require(senderBalance >= amount, "transfer amount exceeds balance");
+        _balances[sender] = senderBalance - amount;
+        _balances[recipient] += amount;
+        
     }
 
 
@@ -111,7 +120,8 @@ contract SmartWallet is Ownable {
     // Exercice 1
     // Implementer cette fonction pour qu'elle nous retourne ce que spender peut
     // encore dépenser en tant owner_.
-    function allowance(address owner_, address spender) public view returns (uint256 remaining) {
+    function allowance(address owner_, address spender) public view returns (uint256) {
+        return _allowances[owner_][spender];
 
     }
 
